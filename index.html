@@ -1,0 +1,220 @@
+<html>
+    <canvas id="cannon_shooting_game" width="1500" height="700"></canvas>
+    <script src="circle_bullet.js"></script>
+    <script src="Tank.js"></script>
+    <script src="enemy_square.js"></script>
+    
+    <script>
+        
+        var g_Canvas=document.getElementById("cannon_shooting_game");
+        var g_Context=g_Canvas.getContext("2d");
+        var Frame_Rate=30;
+        var Time_Interval=1000/Frame_Rate;
+        
+        var g_Start_Time=4;
+        var framecount=0;
+        var g_LeftArrow=0;
+        var g_RightArrow=0;
+        var g_SpaceKey=0;
+        
+        var g_Start_Time_Flag=0;
+        var g_Score=0;
+        var g_Game_End_Text_Flag=0;
+        
+       
+        var g_Tank=new c_Tank(0,550);
+        var g_Enemy=new c_Enemy(1400,600);
+        var innerCircle= new c_Bullet();
+        innerCircle.radius=5;
+        
+        var g_Rightsquare_Enemy_x=0;
+        var g_bottomSquare_Enemy_y=0;
+       
+        var distance=0;
+        
+        function f_Game_Start_Logic()
+        {
+            framecount++;
+            if(framecount==30 && g_Start_Time>0)
+                {
+                   g_Start_Time_Flag=1;
+                    g_Start_Time--;
+                    
+                    framecount=0;
+                }
+              
+            
+        }
+        
+        function f_bullet_enemy_collison()
+        {
+            g_Rightsquare_Enemy_x= g_Enemy.Enemy_Xpos+g_Enemy.Enemy_Width;
+      
+            g_bottomSquare_Enemy_y= g_Enemy.Enemy_Ypos+g_Enemy.Enemy_Height;
+            
+            innerCircle.xpos=Math.max(g_Enemy.Enemy_Xpos,Math.min(g_Tank.bullet.xpos,g_Rightsquare_Enemy_x));
+            innerCircle.ypos=Math.max(g_Enemy.Enemy_Ypos,Math.min(g_Tank.bullet.ypos,g_bottomSquare_Enemy_y));
+            
+            
+            
+           var distance=Math.sqrt(((g_Tank.bullet.xpos-innerCircle.xpos)*(g_Tank.bullet.xpos-innerCircle.xpos))+((g_Tank.bullet.ypos-innerCircle.ypos)*(g_Tank.bullet.ypos-innerCircle.ypos)));
+            if(distance<=g_Tank.bullet.radius)
+                {
+                    g_Score++;
+                    
+                    g_Tank.bullet.Start_animat_flag=0;
+                    g_Enemy.Enemy_Xpos=1400;
+                    g_Enemy.Enemy_Ypos=600;
+                    g_Enemy.Movement_Speed++;
+                    g_Tank.bullet.xpos=g_Tank.Center_Xpos;
+                    g_Tank.bullet.ypos=g_Tank.Center_Ypos;
+                    g_Tank.bullet.initial_velocity=30;
+                    g_Tank.bullet.acceleration=-1;
+                    
+                    g_Tank.bullet.xSpeed=20;
+                    g_Tank.bullet.ySpeed=g_Tank.bullet.initial_velocity;
+                    g_Tank.bullet.dX = 0;
+                    g_Tank.bullet.Fire_Bullet=0;
+                }
+            
+        }
+        
+        function f_Tank_and_enemycollision()
+        {
+            if(g_Tank.tank_Base_Xpos <= (g_Enemy.Enemy_Xpos+g_Enemy.Enemy_Width) && (g_Tank.tank_Base_Xpos+g_Tank.tank_Base_Width) >= g_Enemy.Enemy_Xpos && g_Tank.tank_Base_Ypos <=(g_Enemy.Enemy_Ypos+g_Enemy.Enemy_Height) && (g_Tank.tank_Base_Ypos+g_Tank.tank_Base_Height) >= g_Enemy.Enemy_Ypos)
+                {
+                    clearTimeout(a);
+                    g_Game_End_Text_Flag=1;  
+                  
+                }
+        }
+        
+        function f_ClearScreen()
+        {
+            g_Context.clearRect(0,0,g_Canvas.width,g_Canvas.height);
+            g_Context.strokeRect(0,0,g_Canvas.width,g_Canvas.height);
+            g_Context.fillStyle="#cbe8c9";
+            g_Context.fillRect(0,0,g_Canvas.width,g_Canvas.height);
+        }
+        
+        function f_Start_Time_Draw()
+        {
+            g_Context.font="50px Arial";
+            g_Context.fillText(g_Start_Time,g_Canvas.width/2,200);
+            g_Context.font="30px Arial";
+            g_Context.fillText("Controls:",650,300);
+            g_Context.fillText("Left Angle = Left Arrow",650,350);
+            g_Context.fillText("Right Angle = Right Arrow",650,400);
+            g_Context.fillText("Fire Cannon = Space",650,450);
+        }
+      
+       
+        function f_Game_End_Draw()
+        {
+            g_Context.font="40px Arial";
+            g_Context.fillText("GAME OVER",650,g_Canvas.height/2);
+            
+        }
+      
+        function f_Score_Draw()
+        {
+            g_Context.font="50px Arial";
+            g_Context.fillText(g_Score,g_Canvas.width/2,100);
+             
+        }
+      
+        
+        function f_OnKeyPress(press)
+        {
+            if(g_Start_Time<=0)
+                {
+                    if(press.keyCode==37)
+                        {
+                            g_Tank.rotate_Left_flag=1;
+                            
+                        }
+                    if(press.keyCode==39)
+                        {
+                            g_Tank.rotate_Right_flag=1;
+
+                        }
+                    if(press.keyCode==32)
+                       {
+                           g_Tank.bullet.Start_animat_flag=1;
+                     
+                       }
+            
+                }
+        }
+        
+        function f_OnKeyRelease(release)
+        {
+            if(g_Start_Time<=0)
+                {
+                    if(release.keyCode==37)
+                        {
+                            g_Tank.rotate_Left_flag=0;
+
+                        }
+                    if(release.keyCode==39)
+                        {
+                            g_Tank.rotate_Right_flag=0;
+
+                        }
+                }
+        }
+        
+        function f_GameLoop()
+        {
+            f_Game_Start_Logic();
+            g_Tank.bullet.m_movement();
+            
+            if(g_Start_Time<=0)
+                { 
+                    g_Enemy.m_Enemy_movement();
+                }
+           
+            g_Tank.bullet.m_Border_collision(g_Canvas);
+            
+            g_Tank.m_Barrel_Rotation();
+            g_Tank.m_Shoot_Bullet();
+            
+            f_bullet_enemy_collison();
+            f_Tank_and_enemycollision();
+            
+            f_ClearScreen();
+            
+            g_Tank.m_draw_Tank(g_Context);
+            g_Enemy.m_draw_Enemy(g_Context);
+              
+            
+            if(g_Start_Time_Flag==1)
+                {
+                    f_Start_Time_Draw();
+                    if(g_Start_Time==0)
+                      {    
+                            g_Start_Time_Flag=0;
+                      }
+                }
+            
+            if(g_Game_End_Text_Flag==1)
+               {
+                    f_Game_End_Draw();
+                    
+               }
+            
+            if(g_Start_Time<=0)
+                {
+                    f_Score_Draw();
+                }
+            
+        
+        }
+        
+        window.addEventListener("keydown",f_OnKeyPress);
+        window.addEventListener("keyup",f_OnKeyRelease);
+        
+        
+        var a=setInterval(f_GameLoop,Time_Interval);
+    </script>
+</html>
